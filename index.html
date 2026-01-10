@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RUTA2026 Premium - Control Total</title>
+    <title>RouteFlow Live - Realtime Firebase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
@@ -19,22 +22,45 @@
     </style>
 
     <script>
-        let db = {
-            tareas: JSON.parse(localStorage.getItem('rf_v12_t')) || [],
-            archivos: JSON.parse(localStorage.getItem('rf_v12_a')) || [],
-            rutaIniciada: JSON.parse(localStorage.getItem('rf_v12_r')) || false
+        // ==========================================
+        // CONFIGURACIÓN DE TU FIREBASE (RELLENA AQUÍ)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMIzp3saSMFISgBBq1b8Tv_u6ThRTwGHU",
+            authDomain: "ruta2026-5dc3f.firebaseapp.com",
+            databaseURL: "https://ruta2026-5dc3f-default-rtdb.firebaseio.com",
+            projectId: "ruta2026-5dc3f",
+            storageBucket: "ruta2026-5dc3f.firebasestorage.app",
+            messagingSenderId: "982006793950",
+            appId: "1:982006793950:web:b67ebdcf4c5da537e2644f"
         };
 
-        let usuarioActual = localStorage.getItem('rf_v12_sesion') || null;
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('routeflow_db');
 
-        function guardar() {
-            localStorage.setItem('rf_v12_t', JSON.stringify(db.tareas));
-            localStorage.setItem('rf_v12_a', JSON.stringify(db.archivos));
-            localStorage.setItem('rf_v12_r', JSON.stringify(db.rutaIniciada));
+        let db = { tareas: [], archivos: [], rutaIniciada: false };
+        let usuarioActual = localStorage.getItem('rf_v13_sesion') || null;
+
+        // --- ESCUCHA EN TIEMPO REAL ---
+        // Esta función detecta cambios de CUALQUIER usuario y actualiza la pantalla al instante
+        dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                db = data;
+                // Si no existen las listas en Firebase, las inicializamos vacías
+                if(!db.tareas) db.tareas = [];
+                if(!db.archivos) db.archivos = [];
+                actualizarUI();
+            }
+        });
+
+        function sincronizarFirebase() {
+            dbRef.set(db);
         }
 
         window.onload = () => {
-            const rec = JSON.parse(localStorage.getItem('jefe_rec_v12'));
+            const rec = JSON.parse(localStorage.getItem('jefe_rec_v13'));
             if (rec) { 
                 document.getElementById('uJ').value = rec.u; 
                 document.getElementById('pJ').value = rec.p; 
@@ -45,7 +71,7 @@
 
         function entrarComo(nombre) {
             usuarioActual = nombre;
-            localStorage.setItem('rf_v12_sesion', nombre);
+            localStorage.setItem('rf_v13_sesion', nombre);
             document.getElementById('selector-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
             document.getElementById('display-user').innerText = nombre;
@@ -60,8 +86,8 @@
         function validarJefe() {
             const u = document.getElementById('uJ').value, p = document.getElementById('pJ').value;
             if (u === "sopa" && p === "1234") {
-                if(document.getElementById('checkRecordar').checked) localStorage.setItem('jefe_rec_v12', JSON.stringify({u, p}));
-                else localStorage.removeItem('jefe_rec_v12');
+                if(document.getElementById('checkRecordar').checked) localStorage.setItem('jefe_rec_v13', JSON.stringify({u, p}));
+                else localStorage.removeItem('jefe_rec_v13');
                 document.getElementById('modal-login').classList.add('hidden');
                 entrarComo('Jefe');
             } else alert("Error de acceso");
@@ -70,55 +96,60 @@
         function agregarTarea() {
             const t = document.getElementById('taskIn').value, p = document.getElementById('empSel').value;
             if (!t) return;
+            if (!db.tareas) db.tareas = [];
             db.tareas.push({ id: Date.now(), titulo: t, asignadoA: p, completada: false });
             document.getElementById('taskIn').value = "";
-            guardar(); actualizarUI();
+            sincronizarFirebase();
         }
 
         function toggleTask(id) {
-            if (!db.rutaIniciada) return alert("Ruta no iniciada");
+            if (!db.rutaIniciada) return alert("Ruta no iniciada por el Jefe");
             const idx = db.tareas.findIndex(t => t.id === id);
             const t = db.tareas[idx];
 
             if (t.asignadoA === 'Trabajos') {
                 const now = new Date();
+                if(!db.archivos) db.archivos = [];
                 db.archivos.push({ ...t, fecha: now.toLocaleDateString(), hora: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), por: usuarioActual });
                 db.tareas.splice(idx, 1);
             } else {
                 db.tareas[idx].completada = !db.tareas[idx].completada;
             }
-            guardar(); actualizarUI();
+            sincronizarFirebase();
         }
 
-        // --- FUNCIONES DE BORRADO MASIVO ---
         function borrarTodoTareas() {
-            if (confirm("¿ESTÁS SEGURO? Se borrarán TODAS las tareas activas de Carlos, Ammy y Trabajos.")) {
+            if (confirm("¿Borrar todas las tareas activas?")) {
                 db.tareas = [];
-                guardar();
-                actualizarUI();
+                sincronizarFirebase();
             }
         }
 
         function borrarTodoArchivados() {
-            if (confirm("¿Borrar permanentemente todo el historial de archivaciones?")) {
+            if (confirm("¿Borrar todo el historial?")) {
                 db.archivos = [];
-                guardar();
-                actualizarUI();
+                sincronizarFirebase();
             }
         }
 
         function actualizarUI() {
             const btnR = document.getElementById('btn-ruta');
-            btnR.innerHTML = db.rutaIniciada ? `<i class="fa-solid fa-signal animate-pulse mr-2"></i> RUTA ACTIVA` : "INICIAR RUTA";
-            btnR.className = db.rutaIniciada ? "w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 py-4 rounded-2xl font-black mb-4" : "w-full bg-blue-600 py-4 rounded-2xl font-black mb-4 neo-button";
-            btnR.onclick = () => { db.rutaIniciada = true; guardar(); actualizarUI(); };
+            if (btnR) {
+                btnR.innerHTML = db.rutaIniciada ? `<i class="fa-solid fa-signal animate-pulse mr-2"></i> RUTA ACTIVA` : "INICIAR RUTA";
+                btnR.className = db.rutaIniciada ? "w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 py-4 rounded-2xl font-black mb-4" : "w-full bg-blue-600 py-4 rounded-2xl font-black mb-4 neo-button";
+                btnR.onclick = () => { db.rutaIniciada = true; sincronizarFirebase(); };
+            }
 
             const lista = document.getElementById('lista-tareas'), listaA = document.getElementById('lista-archivos');
+            if(!lista || !listaA) return;
             lista.innerHTML = ""; listaA.innerHTML = "";
 
+            const tActivas = db.tareas || [];
+            const tArchivadas = db.archivos || [];
+
             const filtradas = (usuarioActual === 'Jefe' || usuarioActual === 'Archivaciones') 
-                ? db.tareas 
-                : db.tareas.filter(t => t.asignadoA === usuarioActual);
+                ? tActivas 
+                : tActivas.filter(t => t.asignadoA === usuarioActual);
 
             if (usuarioActual !== 'Archivaciones') {
                 filtradas.forEach(t => {
@@ -131,7 +162,7 @@
             }
 
             if (usuarioActual === 'Archivaciones' || usuarioActual === 'Jefe') {
-                db.archivos.slice().reverse().forEach(a => {
+                [...tArchivadas].reverse().forEach(a => {
                     const div = document.createElement('div');
                     div.className = "glass p-4 mb-3 rounded-2xl border-l-4 border-orange-500 card-task";
                     div.innerHTML = `<p class="font-bold text-sm text-slate-200">${a.titulo}</p><p class="text-[8px] text-slate-500 font-bold uppercase mt-2">POR: ${a.por} | ${a.fecha} | ${a.hora}</p>`;
@@ -154,7 +185,7 @@
                 <button onclick="entrarComo('Ammy')" class="p-6 glass rounded-[2rem] font-black text-purple-400">Ammy</button>
             </div>
             <button onclick="entrarComo('Trabajos')" class="w-full p-6 glass rounded-[2rem] font-black text-orange-500">📂 TRABAJOS</button>
-            <button onclick="entrarComo('Archivaciones')" class="w-full p-4 text-slate-600 font-bold text-[10px] tracking-widest uppercase pt-6 text-center">Ver Archivados</button>
+            <button onclick="entrarComo('Archivaciones')" class="w-full p-4 text-slate-600 font-bold text-[10px] tracking-widest uppercase pt-6 text-center">Historial Archivados</button>
         </div>
     </div>
 
@@ -169,14 +200,14 @@
                     <span class="text-[10px] text-slate-500 font-bold uppercase">Recordar sesión</span>
                 </label>
                 <button onclick="validarJefe()" class="w-full bg-blue-600 py-5 rounded-[2rem] font-black neo-button">ACCEDER</button>
-                <button onclick="document.getElementById('modal-login').classList.add('hidden')" class="w-full text-slate-600 font-bold text-xs pt-4">CERRAR</button>
+                <button onclick="document.getElementById('modal-login').classList.add('hidden')" class="w-full text-slate-600 font-bold text-xs pt-4 text-center">CERRAR</button>
             </div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden min-h-screen">
         <nav class="p-6 glass sticky top-0 z-40 flex justify-between items-center rounded-b-[2.5rem]">
-            <button onclick="localStorage.removeItem('rf_v12_sesion'); location.reload();" class="text-red-400 font-black text-xs uppercase tracking-widest">Salir</button>
+            <button onclick="localStorage.removeItem('rf_v13_sesion'); location.reload();" class="text-red-400 font-black text-xs uppercase tracking-widest">Salir</button>
             <span id="display-user" class="font-black text-blue-400 uppercase italic tracking-tighter text-lg"></span>
             <button id="btn-vaciado-global" onclick="borrarTodoArchivados()" class="hidden w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
                 <i class="fa-solid fa-trash-can"></i>
@@ -184,13 +215,11 @@
         </nav>
 
         <main class="max-w-md mx-auto p-6">
-            <div id="jefe-controls" class="hidden">
+            <div id="jefe-controls" class="hidden text-center">
                 <button id="btn-ruta"></button>
-                
                 <button onclick="borrarTodoTareas()" class="w-full mb-8 py-2 text-[10px] font-black text-red-500/50 uppercase tracking-[0.3em] hover:text-red-500 transition-colors">
-                    <i class="fa-solid fa-eraser mr-2"></i> Limpiar todas las tareas activas
+                    <i class="fa-solid fa-eraser mr-2"></i> Limpiar tareas activas
                 </button>
-
                 <div class="glass p-6 rounded-[2.5rem] mb-10">
                     <input id="taskIn" type="text" placeholder="Nueva tarea..." class="w-full p-5 rounded-2xl mb-4 outline-none">
                     <div class="flex gap-3">
@@ -212,6 +241,5 @@
             <div id="lista-archivos"></div>
         </main>
     </div>
-
 </body>
 </html>
