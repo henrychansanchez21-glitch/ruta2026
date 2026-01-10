@@ -3,222 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RouteFlow - Carlos & Ammy</title>
+    <title>RUTA2026 Premium - Control Total</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .neo-button { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .neo-button:active { transform: scale(0.92); }
+        .card-task { animation: slideUp 0.4s ease forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        input, select { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: white !important; }
+    </style>
+
     <script>
         let db = {
-            tareas: JSON.parse(localStorage.getItem('tareas_v9')) || [],
-            archivos: JSON.parse(localStorage.getItem('archivos_v9')) || [],
-            rutaIniciada: JSON.parse(localStorage.getItem('ruta_v9')) || false
+            tareas: JSON.parse(localStorage.getItem('rf_v12_t')) || [],
+            archivos: JSON.parse(localStorage.getItem('rf_v12_a')) || [],
+            rutaIniciada: JSON.parse(localStorage.getItem('rf_v12_r')) || false
         };
 
-        let usuarioActual = localStorage.getItem('sesion_activa') || null;
+        let usuarioActual = localStorage.getItem('rf_v12_sesion') || null;
 
         function guardar() {
-            localStorage.setItem('tareas_v9', JSON.stringify(db.tareas));
-            localStorage.setItem('archivos_v9', JSON.stringify(db.archivos));
-            localStorage.setItem('ruta_v9', JSON.stringify(db.rutaIniciada));
+            localStorage.setItem('rf_v12_t', JSON.stringify(db.tareas));
+            localStorage.setItem('rf_v12_a', JSON.stringify(db.archivos));
+            localStorage.setItem('rf_v12_r', JSON.stringify(db.rutaIniciada));
         }
 
         window.onload = () => {
-            const recordado = JSON.parse(localStorage.getItem('datos_jefe_recordados'));
-            if (recordado) {
-                document.getElementById('uJ').value = recordado.user;
-                document.getElementById('pJ').value = recordado.pass;
-                document.getElementById('checkRecordar').checked = true;
+            const rec = JSON.parse(localStorage.getItem('jefe_rec_v12'));
+            if (rec) { 
+                document.getElementById('uJ').value = rec.u; 
+                document.getElementById('pJ').value = rec.p; 
+                document.getElementById('checkRecordar').checked = true; 
             }
             if (usuarioActual) entrarComo(usuarioActual);
         };
 
-        window.entrarComo = (nombre) => {
+        function entrarComo(nombre) {
             usuarioActual = nombre;
-            localStorage.setItem('sesion_activa', nombre);
-            document.getElementById('pantalla-seleccion').classList.add('hidden');
-            document.getElementById('app-principal').classList.remove('hidden');
-            document.getElementById('user-tag').innerText = nombre;
+            localStorage.setItem('rf_v12_sesion', nombre);
+            document.getElementById('selector-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('display-user').innerText = nombre;
+            
+            const esJefe = nombre === 'Jefe';
+            document.getElementById('jefe-controls').classList.toggle('hidden', !esJefe);
+            document.getElementById('btn-vaciado-global').classList.toggle('hidden', !esJefe);
+            
+            actualizarUI();
+        }
 
-            const panelJefe = document.getElementById('controles-jefe');
-            panelJefe.classList.toggle('hidden', nombre !== 'Jefe');
-            document.getElementById('btn-borrar-historial').classList.toggle('hidden', nombre !== 'Jefe');
-
-            actualizarInterfaz();
-        };
-
-        window.validarJefe = () => {
-            const user = document.getElementById('uJ').value;
-            const pass = document.getElementById('pJ').value;
-            const recordar = document.getElementById('checkRecordar').checked;
-
-            if (user === "sopa" && pass === "1234") {
-                if (recordar) {
-                    localStorage.setItem('datos_jefe_recordados', JSON.stringify({user, pass}));
-                } else {
-                    localStorage.removeItem('datos_jefe_recordados');
-                }
+        function validarJefe() {
+            const u = document.getElementById('uJ').value, p = document.getElementById('pJ').value;
+            if (u === "sopa" && p === "1234") {
+                if(document.getElementById('checkRecordar').checked) localStorage.setItem('jefe_rec_v12', JSON.stringify({u, p}));
+                else localStorage.removeItem('jefe_rec_v12');
                 document.getElementById('modal-login').classList.add('hidden');
                 entrarComo('Jefe');
-            } else alert("Acceso denegado");
-        };
+            } else alert("Error de acceso");
+        }
 
-        window.cerrarSesion = () => {
-            localStorage.removeItem('sesion_activa');
-            location.reload();
-        };
-
-        window.iniciarRuta = () => {
-            db.rutaIniciada = true;
-            guardar();
-            actualizarInterfaz();
-        };
-
-        window.addTask = () => {
-            const titulo = document.getElementById('taskIn').value;
-            const destino = document.getElementById('empSel').value;
-            if (!titulo) return alert("Escribe una descripción");
-            db.tareas.push({ id: Date.now(), titulo, asignadoA: destino, completada: false });
+        function agregarTarea() {
+            const t = document.getElementById('taskIn').value, p = document.getElementById('empSel').value;
+            if (!t) return;
+            db.tareas.push({ id: Date.now(), titulo: t, asignadoA: p, completada: false });
             document.getElementById('taskIn').value = "";
-            guardar();
-            actualizarInterfaz();
-        };
+            guardar(); actualizarUI();
+        }
 
-        window.toggleTask = (id) => {
-            if (!db.rutaIniciada) return alert("El jefe debe iniciar la ruta primero");
-            const index = db.tareas.findIndex(t => t.id === id);
-            if (index === -1) return;
-
-            const t = db.tareas[index];
+        function toggleTask(id) {
+            if (!db.rutaIniciada) return alert("Ruta no iniciada");
+            const idx = db.tareas.findIndex(t => t.id === id);
+            const t = db.tareas[idx];
 
             if (t.asignadoA === 'Trabajos') {
-                const ahora = new Date();
-                db.archivos.push({
-                    ...t,
-                    completada: true,
-                    fechaFin: ahora.toLocaleDateString(),
-                    horaFin: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    quienFinalizo: usuarioActual
-                });
-                db.tareas.splice(index, 1);
+                const now = new Date();
+                db.archivos.push({ ...t, fecha: now.toLocaleDateString(), hora: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), por: usuarioActual });
+                db.tareas.splice(idx, 1);
             } else {
-                db.tareas[index].completada = !db.tareas[index].completada;
+                db.tareas[idx].completada = !db.tareas[idx].completada;
             }
-            
-            guardar();
-            actualizarInterfaz();
-        };
+            guardar(); actualizarUI();
+        }
 
-        window.solicitarBorrarHistorial = () => {
-            const pass = prompt("Clave de Jefe para borrar historial:");
-            if (pass === "1234") {
+        // --- FUNCIONES DE BORRADO MASIVO ---
+        function borrarTodoTareas() {
+            if (confirm("¿ESTÁS SEGURO? Se borrarán TODAS las tareas activas de Carlos, Ammy y Trabajos.")) {
+                db.tareas = [];
+                guardar();
+                actualizarUI();
+            }
+        }
+
+        function borrarTodoArchivados() {
+            if (confirm("¿Borrar permanentemente todo el historial de archivaciones?")) {
                 db.archivos = [];
                 guardar();
-                actualizarInterfaz();
+                actualizarUI();
             }
-        };
+        }
 
-        function actualizarInterfaz() {
-            const btnRuta = document.getElementById('btn-ruta');
-            if (db.rutaIniciada) {
-                btnRuta.innerText = "RUTA EN PROCESO";
-                btnRuta.className = "w-full bg-green-500 text-white py-4 rounded-2xl font-black mb-6 opacity-60";
-                btnRuta.disabled = true;
-            } else {
-                btnRuta.innerText = "INICIAR RUTA";
-                btnRuta.className = "w-full bg-orange-500 text-white py-4 rounded-2xl font-black mb-6 shadow-lg";
-                btnRuta.disabled = false;
-            }
+        function actualizarUI() {
+            const btnR = document.getElementById('btn-ruta');
+            btnR.innerHTML = db.rutaIniciada ? `<i class="fa-solid fa-signal animate-pulse mr-2"></i> RUTA ACTIVA` : "INICIAR RUTA";
+            btnR.className = db.rutaIniciada ? "w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 py-4 rounded-2xl font-black mb-4" : "w-full bg-blue-600 py-4 rounded-2xl font-black mb-4 neo-button";
+            btnR.onclick = () => { db.rutaIniciada = true; guardar(); actualizarUI(); };
 
-            const lista = document.getElementById('lista-tareas');
-            const listaArchivos = document.getElementById('lista-archivos');
-            lista.innerHTML = "";
-            listaArchivos.innerHTML = "";
+            const lista = document.getElementById('lista-tareas'), listaA = document.getElementById('lista-archivos');
+            lista.innerHTML = ""; listaA.innerHTML = "";
 
             const filtradas = (usuarioActual === 'Jefe' || usuarioActual === 'Archivaciones') 
                 ? db.tareas 
-                : db.tareas.filter(t => t.asignadoA === usuarioActual || t.asignadoA === 'Trabajos');
+                : db.tareas.filter(t => t.asignadoA === usuarioActual);
 
             if (usuarioActual !== 'Archivaciones') {
                 filtradas.forEach(t => {
-                    const item = document.createElement('div');
-                    item.className = `p-4 mb-3 rounded-2xl flex justify-between items-center bg-white shadow-sm border ${t.completada ? 'border-green-100 bg-green-50/30 opacity-70' : 'border-gray-100'}`;
-                    item.innerHTML = `<div><p class="font-bold text-gray-800 ${t.completada ? 'line-through text-gray-400' : ''}">${t.titulo}</p><p class="text-[9px] ${t.asignadoA === 'Trabajos' ? 'text-orange-500' : 'text-blue-500'} font-black uppercase tracking-widest">${t.asignadoA === 'Trabajos' ? '📂 TRABAJO' : '👤 ' + t.asignadoA}</p></div><button onclick="toggleTask(${t.id})" class="text-3xl ${t.completada ? 'text-green-500' : 'text-gray-200'}"><i class="fa-solid fa-circle-check"></i></button>`;
-                    lista.appendChild(item);
+                    const div = document.createElement('div');
+                    div.className = `card-task glass p-5 mb-4 rounded-3xl flex justify-between items-center ${t.completada ? 'opacity-40' : ''}`;
+                    div.innerHTML = `<div><p class="font-bold text-lg">${t.titulo}</p><span class="text-[9px] font-black tracking-widest text-blue-400 uppercase">${t.asignadoA}</span></div>
+                        <button onclick="toggleTask(${t.id})" class="text-4xl ${t.completada ? 'text-green-400' : 'text-slate-700'}"><i class="fa-solid fa-circle-check"></i></button>`;
+                    lista.appendChild(div);
                 });
             }
 
             if (usuarioActual === 'Archivaciones' || usuarioActual === 'Jefe') {
                 db.archivos.slice().reverse().forEach(a => {
-                    const item = document.createElement('div');
-                    item.className = "p-4 mb-3 rounded-2xl bg-slate-800 text-white border-l-4 border-orange-500";
-                    item.innerHTML = `<p class="font-bold text-sm mb-2">${a.titulo}</p><div class="grid grid-cols-2 text-[8px] text-slate-400 font-bold uppercase"><span>${a.quienFinalizo}</span><span class="text-right">${a.fechaFin}</span><span>${a.horaFin}</span><span class="text-right text-orange-400">ARCHIVADO</span></div>`;
-                    listaArchivos.appendChild(item);
+                    const div = document.createElement('div');
+                    div.className = "glass p-4 mb-3 rounded-2xl border-l-4 border-orange-500 card-task";
+                    div.innerHTML = `<p class="font-bold text-sm text-slate-200">${a.titulo}</p><p class="text-[8px] text-slate-500 font-bold uppercase mt-2">POR: ${a.por} | ${a.fecha} | ${a.hora}</p>`;
+                    listaA.appendChild(div);
                 });
             }
         }
     </script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900">
+<body class="min-h-screen">
 
-    <div id="pantalla-seleccion" class="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-        <h1 class="text-3xl font-black mb-10 tracking-tighter italic uppercase text-blue-600">RouteFlow</h1>
-        <div class="w-full max-w-xs space-y-3">
-            <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="w-full p-5 bg-slate-900 text-white rounded-2xl font-bold flex justify-between items-center shadow-xl mb-4">
-                <span>Acceso Jefe</span> <i class="fa-solid fa-lock text-xs"></i>
+    <div id="selector-screen" class="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-8">
+        <h1 class="text-4xl font-black italic tracking-tighter mb-12 uppercase text-center">Route<span class="text-blue-500">Flow</span></h1>
+        <div class="w-full space-y-4">
+            <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="w-full p-6 glass rounded-[2rem] font-bold flex justify-between items-center neo-button">
+                <span>Acceso Jefe</span> <i class="fa-solid fa-shield-halved text-blue-500"></i>
             </button>
-            <button onclick="entrarComo('Carlos')" class="w-full p-4 bg-white border rounded-2xl font-bold flex justify-between items-center">Carlos <i class="fa-solid fa-chevron-right text-blue-500"></i></button>
-            <button onclick="entrarComo('Ammy')" class="w-full p-4 bg-white border rounded-2xl font-bold flex justify-between items-center">Ammy <i class="fa-solid fa-chevron-right text-blue-500"></i></button>
-            <button onclick="entrarComo('Trabajos')" class="w-full p-4 bg-orange-50 border border-orange-200 rounded-2xl font-black text-orange-600 flex justify-between items-center">TRABAJOS <i class="fa-solid fa-briefcase"></i></button>
-            <button onclick="entrarComo('Archivaciones')" class="w-full p-4 bg-slate-200 border rounded-2xl font-black text-slate-600 flex justify-between items-center">ARCHIVACIONES <i class="fa-solid fa-box-archive"></i></button>
+            <div class="grid grid-cols-2 gap-4 pt-4">
+                <button onclick="entrarComo('Carlos')" class="p-6 glass rounded-[2rem] font-black text-blue-400">Carlos</button>
+                <button onclick="entrarComo('Ammy')" class="p-6 glass rounded-[2rem] font-black text-purple-400">Ammy</button>
+            </div>
+            <button onclick="entrarComo('Trabajos')" class="w-full p-6 glass rounded-[2rem] font-black text-orange-500">📂 TRABAJOS</button>
+            <button onclick="entrarComo('Archivaciones')" class="w-full p-4 text-slate-600 font-bold text-[10px] tracking-widest uppercase pt-6 text-center">Ver Archivados</button>
         </div>
     </div>
 
-    <div id="modal-login" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-        <div class="bg-white p-8 rounded-[35px] w-full max-w-xs shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-center">Admin Login</h2>
-            <input id="uJ" type="text" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-xl mb-3 outline-none">
-            <input id="pJ" type="password" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-xl mb-3 outline-none">
-            
-            <label class="flex items-center gap-2 mb-6 px-1 cursor-pointer">
-                <input type="checkbox" id="checkRecordar" class="w-4 h-4 rounded text-blue-600">
-                <span class="text-xs text-slate-500 font-bold uppercase tracking-tighter">Recordar mis datos</span>
-            </label>
-
-            <button onclick="validarJefe()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black">Entrar</button>
-            <button onclick="document.getElementById('modal-login').classList.add('hidden')" class="w-full mt-2 text-slate-400 text-xs font-bold uppercase">Cancelar</button>
+    <div id="modal-login" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
+        <div class="glass p-10 rounded-[3rem] w-full max-w-sm">
+            <h2 class="text-xl font-black mb-8 text-center uppercase tracking-widest">Login Jefe</h2>
+            <div class="space-y-4">
+                <input id="uJ" type="text" placeholder="Usuario" class="w-full p-5 rounded-2xl outline-none">
+                <input id="pJ" type="password" placeholder="Contraseña" class="w-full p-5 rounded-2xl outline-none">
+                <label class="flex items-center gap-3 px-2 cursor-pointer">
+                    <input type="checkbox" id="checkRecordar" class="w-5 h-5 rounded border-white/10">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase">Recordar sesión</span>
+                </label>
+                <button onclick="validarJefe()" class="w-full bg-blue-600 py-5 rounded-[2rem] font-black neo-button">ACCEDER</button>
+                <button onclick="document.getElementById('modal-login').classList.add('hidden')" class="w-full text-slate-600 font-bold text-xs pt-4">CERRAR</button>
+            </div>
         </div>
     </div>
 
-    <div id="app-principal" class="hidden min-h-screen">
-        <nav class="bg-white p-5 flex justify-between items-center sticky top-0 z-40 border-b">
-            <button onclick="cerrarSesion()" class="text-red-400 font-bold text-xs uppercase">Salir</button>
-            <span id="user-tag" class="text-[10px] font-black bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full uppercase tracking-widest"></span>
-            <div class="w-8"></div>
+    <div id="app-screen" class="hidden min-h-screen">
+        <nav class="p-6 glass sticky top-0 z-40 flex justify-between items-center rounded-b-[2.5rem]">
+            <button onclick="localStorage.removeItem('rf_v12_sesion'); location.reload();" class="text-red-400 font-black text-xs uppercase tracking-widest">Salir</button>
+            <span id="display-user" class="font-black text-blue-400 uppercase italic tracking-tighter text-lg"></span>
+            <button id="btn-vaciado-global" onclick="borrarTodoArchivados()" class="hidden w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
         </nav>
 
-        <main class="p-6 max-w-md mx-auto">
-            <div id="controles-jefe" class="hidden">
-                <button id="btn-ruta" onclick="iniciarRuta()"></button>
-                <div class="bg-white p-6 rounded-[30px] border border-slate-100 shadow-sm mb-8 text-center">
-                    <input id="taskIn" type="text" placeholder="Nueva tarea..." class="w-full p-4 bg-slate-50 rounded-2xl mb-4 border-none outline-none focus:ring-1 focus:ring-blue-300 text-sm">
-                    <div class="flex gap-2">
-                        <select id="empSel" class="flex-1 p-4 bg-slate-50 rounded-2xl font-bold text-[10px] outline-none border-none">
-                            <option value="Carlos">Para: Carlos</option>
-                            <option value="Ammy">Para: Ammy</option>
-                            <option value="Trabajos">Para: TRABAJOS</option>
+        <main class="max-w-md mx-auto p-6">
+            <div id="jefe-controls" class="hidden">
+                <button id="btn-ruta"></button>
+                
+                <button onclick="borrarTodoTareas()" class="w-full mb-8 py-2 text-[10px] font-black text-red-500/50 uppercase tracking-[0.3em] hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-eraser mr-2"></i> Limpiar todas las tareas activas
+                </button>
+
+                <div class="glass p-6 rounded-[2.5rem] mb-10">
+                    <input id="taskIn" type="text" placeholder="Nueva tarea..." class="w-full p-5 rounded-2xl mb-4 outline-none">
+                    <div class="flex gap-3">
+                        <select id="empSel" class="flex-1 p-5 rounded-2xl font-bold text-xs outline-none appearance-none text-center">
+                            <option value="Carlos">Carlos</option>
+                            <option value="Ammy">Ammy</option>
+                            <option value="Trabajos">TRABAJOS</option>
                         </select>
-                        <button onclick="addTask()" class="bg-blue-600 text-white px-6 rounded-2xl font-black">OK</button>
+                        <button onclick="agregarTarea()" class="bg-white text-black px-8 rounded-2xl font-black neo-button">OK</button>
                     </div>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mb-4 px-2">
-                <h3 class="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Lista y Archivos</h3>
-                <button id="btn-borrar-historial" onclick="solicitarBorrarHistorial()" class="hidden text-[10px] font-bold text-red-500 uppercase tracking-tighter">Limpiar Historial</button>
-            </div>
-
+            <h3 class="text-[9px] font-black text-slate-600 uppercase tracking-[0.4em] mb-6 px-4 flex items-center gap-4 text-center">
+                <div class="h-px bg-slate-800 flex-1"></div> PANEL DE CONTROL <div class="h-px bg-slate-800 flex-1"></div>
+            </h3>
+            
             <div id="lista-tareas"></div>
-            <div id="lista-archivos" class="mt-4"></div>
+            <div id="lista-archivos"></div>
         </main>
     </div>
 
