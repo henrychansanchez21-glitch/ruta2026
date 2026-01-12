@@ -43,12 +43,10 @@
         let usuarioActual = localStorage.getItem('rf_v13_sesion') || null;
 
         // --- ESCUCHA EN TIEMPO REAL ---
-        // Esta función detecta cambios de CUALQUIER usuario y actualiza la pantalla al instante
         dbRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 db = data;
-                // Si no existen las listas en Firebase, las inicializamos vacías
                 if(!db.tareas) db.tareas = [];
                 if(!db.archivos) db.archivos = [];
                 actualizarUI();
@@ -207,14 +205,14 @@
 
     <div id="app-screen" class="hidden min-h-screen">
         <nav class="p-6 glass sticky top-0 z-40 flex justify-between items-center rounded-b-[2.5rem]">
-            <button onclick="localStorage.removeItem('rf_v13_sesion'); location.reload();" class="text-red-400 font-black text-xs uppercase tracking-widest">Salir</button>
+            <div class="w-10"></div>
             <span id="display-user" class="font-black text-blue-400 uppercase italic tracking-tighter text-lg"></span>
             <button id="btn-vaciado-global" onclick="borrarTodoArchivados()" class="hidden w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
         </nav>
 
-        <main class="max-w-md mx-auto p-6">
+        <main class="max-w-md mx-auto p-6 pb-24">
             <div id="jefe-controls" class="hidden text-center">
                 <button id="btn-ruta"></button>
                 <button onclick="borrarTodoTareas()" class="w-full mb-8 py-2 text-[10px] font-black text-red-500/50 uppercase tracking-[0.3em] hover:text-red-500 transition-colors">
@@ -240,6 +238,13 @@
             <div id="lista-tareas"></div>
             <div id="lista-archivos"></div>
         </main>
+
+        <div class="fixed bottom-6 left-6 z-50">
+            <button onclick="localStorage.removeItem('rf_v13_sesion'); location.reload();" 
+                    class="bg-red-500/10 border border-red-500/20 text-red-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl backdrop-blur-md neo-button">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Salir
+            </button>
+        </div>
     </div>
 </body>
 </html>
