@@ -3,248 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RouteFlow Live - Realtime Firebase</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
+    <title>App Fuera de Servicio</title>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .neo-button { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .neo-button:active { transform: scale(0.92); }
-        .card-task { animation: slideUp 0.4s ease forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        input, select { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: white !important; }
+        :root {
+            --primary: #ff4757;
+            --accent: #2ed573;
+            --bg: #0f0f12;
+            --card: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Contenedor Principal */
+        .alert-card {
+            background: var(--card);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        h1 {
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .status-msg {
+            font-size: 1.1em;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        /* Rejilla de Especificaciones */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: left;
+        }
+
+        .spec-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .spec-item span {
+            display: block;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .spec-item strong {
+            font-size: 1em;
+        }
+
+        /* Botón de Reintento (JS) */
+        .btn-reboot {
+            margin-top: 30px;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            background: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-reboot:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
+</head>
+<body>
+
+    <div class="alert-card">
+        <h1>⚠️ APP FUERA DE SERVICIO</h1>
+        <p class="status-msg">Hasta nuevo aviso por falta de saber usarla.</p>
+
+        <div class="specs-grid">
+            <div class="spec-item">
+                <span>Almacenamiento</span>
+                <strong>SSD 3TB</strong>
+            </div>
+            <div class="spec-item">
+                <span>Memoria RAM</span>
+                <strong>64GB MDDR5</strong>
+            </div>
+            <div class="spec-item">
+                <span>Procesador</span>
+                <strong>Ryzen 9</strong>
+            </div>
+            <div class="spec-item">
+                <span>Gráfica</span>
+                <strong>RTX 5090Ti</strong>
+            </div>
+        </div>
+
+        <button class="btn-reboot" onclick="rebootSystem()">REINTENTAR ACCESO</button>
+    </div>
 
     <script>
-        // ==========================================
-        // CONFIGURACIÓN DE TU FIREBASE (RELLENA AQUÍ)
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyBMIzp3saSMFISgBBq1b8Tv_u6ThRTwGHU",
-            authDomain: "ruta2026-5dc3f.firebaseapp.com",
-            databaseURL: "https://ruta2026-5dc3f-default-rtdb.firebaseio.com",
-            projectId: "ruta2026-5dc3f",
-            storageBucket: "ruta2026-5dc3f.firebasestorage.app",
-            messagingSenderId: "982006793950",
-            appId: "1:982006793950:web:b67ebdcf4c5da537e2644f"
-        };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('routeflow_db');
-
-        let db = { tareas: [], archivos: [], rutaIniciada: false };
-        let usuarioActual = localStorage.getItem('rf_v13_sesion') || null;
-
-        // --- ESCUCHA EN TIEMPO REAL ---
-        dbRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                db = data;
-                if(!db.tareas) db.tareas = [];
-                if(!db.archivos) db.archivos = [];
-                actualizarUI();
-            }
-        });
-
-        function sincronizarFirebase() {
-            dbRef.set(db);
-        }
-
-        window.onload = () => {
-            const rec = JSON.parse(localStorage.getItem('jefe_rec_v13'));
-            if (rec) { 
-                document.getElementById('uJ').value = rec.u; 
-                document.getElementById('pJ').value = rec.p; 
-                document.getElementById('checkRecordar').checked = true; 
-            }
-            if (usuarioActual) entrarComo(usuarioActual);
-        };
-
-        function entrarComo(nombre) {
-            usuarioActual = nombre;
-            localStorage.setItem('rf_v13_sesion', nombre);
-            document.getElementById('selector-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('display-user').innerText = nombre;
+        function rebootSystem() {
+            const btn = document.querySelector('.btn-reboot');
+            btn.innerText = "ESPERANDO CONOCIMIENTO TÉCNICO...";
+            btn.style.background = "#555";
             
-            const esJefe = nombre === 'Jefe';
-            document.getElementById('jefe-controls').classList.toggle('hidden', !esJefe);
-            document.getElementById('btn-vaciado-global').classList.toggle('hidden', !esJefe);
-            
-            actualizarUI();
-        }
-
-        function validarJefe() {
-            const u = document.getElementById('uJ').value, p = document.getElementById('pJ').value;
-            if (u === "sopa" && p === "1234") {
-                if(document.getElementById('checkRecordar').checked) localStorage.setItem('jefe_rec_v13', JSON.stringify({u, p}));
-                else localStorage.removeItem('jefe_rec_v13');
-                document.getElementById('modal-login').classList.add('hidden');
-                entrarComo('Jefe');
-            } else alert("Error de acceso");
-        }
-
-        function agregarTarea() {
-            const t = document.getElementById('taskIn').value, p = document.getElementById('empSel').value;
-            if (!t) return;
-            if (!db.tareas) db.tareas = [];
-            db.tareas.push({ id: Date.now(), titulo: t, asignadoA: p, completada: false });
-            document.getElementById('taskIn').value = "";
-            sincronizarFirebase();
-        }
-
-        function toggleTask(id) {
-            if (!db.rutaIniciada) return alert("Ruta no iniciada por el Jefe");
-            const idx = db.tareas.findIndex(t => t.id === id);
-            const t = db.tareas[idx];
-
-            if (t.asignadoA === 'Trabajos') {
-                const now = new Date();
-                if(!db.archivos) db.archivos = [];
-                db.archivos.push({ ...t, fecha: now.toLocaleDateString(), hora: now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), por: usuarioActual });
-                db.tareas.splice(idx, 1);
-            } else {
-                db.tareas[idx].completada = !db.tareas[idx].completada;
-            }
-            sincronizarFirebase();
-        }
-
-        function borrarTodoTareas() {
-            if (confirm("¿Borrar todas las tareas activas?")) {
-                db.tareas = [];
-                sincronizarFirebase();
-            }
-        }
-
-        function borrarTodoArchivados() {
-            if (confirm("¿Borrar todo el historial?")) {
-                db.archivos = [];
-                sincronizarFirebase();
-            }
-        }
-
-        function actualizarUI() {
-            const btnR = document.getElementById('btn-ruta');
-            if (btnR) {
-                btnR.innerHTML = db.rutaIniciada ? `<i class="fa-solid fa-signal animate-pulse mr-2"></i> RUTA ACTIVA` : "INICIAR RUTA";
-                btnR.className = db.rutaIniciada ? "w-full bg-blue-500/10 text-blue-400 border border-blue-500/30 py-4 rounded-2xl font-black mb-4" : "w-full bg-blue-600 py-4 rounded-2xl font-black mb-4 neo-button";
-                btnR.onclick = () => { db.rutaIniciada = true; sincronizarFirebase(); };
-            }
-
-            const lista = document.getElementById('lista-tareas'), listaA = document.getElementById('lista-archivos');
-            if(!lista || !listaA) return;
-            lista.innerHTML = ""; listaA.innerHTML = "";
-
-            const tActivas = db.tareas || [];
-            const tArchivadas = db.archivos || [];
-
-            const filtradas = (usuarioActual === 'Jefe' || usuarioActual === 'Archivaciones') 
-                ? tActivas 
-                : tActivas.filter(t => t.asignadoA === usuarioActual);
-
-            if (usuarioActual !== 'Archivaciones') {
-                filtradas.forEach(t => {
-                    const div = document.createElement('div');
-                    div.className = `card-task glass p-5 mb-4 rounded-3xl flex justify-between items-center ${t.completada ? 'opacity-40' : ''}`;
-                    div.innerHTML = `<div><p class="font-bold text-lg">${t.titulo}</p><span class="text-[9px] font-black tracking-widest text-blue-400 uppercase">${t.asignadoA}</span></div>
-                        <button onclick="toggleTask(${t.id})" class="text-4xl ${t.completada ? 'text-green-400' : 'text-slate-700'}"><i class="fa-solid fa-circle-check"></i></button>`;
-                    lista.appendChild(div);
-                });
-            }
-
-            if (usuarioActual === 'Archivaciones' || usuarioActual === 'Jefe') {
-                [...tArchivadas].reverse().forEach(a => {
-                    const div = document.createElement('div');
-                    div.className = "glass p-4 mb-3 rounded-2xl border-l-4 border-orange-500 card-task";
-                    div.innerHTML = `<p class="font-bold text-sm text-slate-200">${a.titulo}</p><p class="text-[8px] text-slate-500 font-bold uppercase mt-2">POR: ${a.por} | ${a.fecha} | ${a.hora}</p>`;
-                    listaA.appendChild(div);
-                });
-            }
+            setTimeout(() => {
+                alert("Error: El hardware es demasiado potente para el operador actual. Por favor, lea el manual.");
+                btn.innerText = "REINTENTAR ACCESO";
+                btn.style.background = "#ff4757";
+            }, 1500);
         }
     </script>
-</head>
-<body class="min-h-screen">
-
-    <div id="selector-screen" class="max-w-md mx-auto min-h-screen flex flex-col items-center justify-center p-8">
-        <h1 class="text-4xl font-black italic tracking-tighter mb-12 uppercase text-center">Route<span class="text-blue-500">Flow</span></h1>
-        <div class="w-full space-y-4">
-            <button onclick="document.getElementById('modal-login').classList.remove('hidden')" class="w-full p-6 glass rounded-[2rem] font-bold flex justify-between items-center neo-button">
-                <span>Acceso Jefe</span> <i class="fa-solid fa-shield-halved text-blue-500"></i>
-            </button>
-            <div class="grid grid-cols-2 gap-4 pt-4">
-                <button onclick="entrarComo('Carlos')" class="p-6 glass rounded-[2rem] font-black text-blue-400">Carlos</button>
-                <button onclick="entrarComo('Ammy')" class="p-6 glass rounded-[2rem] font-black text-purple-400">Ammy</button>
-            </div>
-            <button onclick="entrarComo('Trabajos')" class="w-full p-6 glass rounded-[2rem] font-black text-orange-500">📂 TRABAJOS</button>
-            <button onclick="entrarComo('Archivaciones')" class="w-full p-4 text-slate-600 font-bold text-[10px] tracking-widest uppercase pt-6 text-center">Historial Archivados</button>
-        </div>
-    </div>
-
-    <div id="modal-login" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-        <div class="glass p-10 rounded-[3rem] w-full max-w-sm">
-            <h2 class="text-xl font-black mb-8 text-center uppercase tracking-widest">Login Jefe</h2>
-            <div class="space-y-4">
-                <input id="uJ" type="text" placeholder="Usuario" class="w-full p-5 rounded-2xl outline-none">
-                <input id="pJ" type="password" placeholder="Contraseña" class="w-full p-5 rounded-2xl outline-none">
-                <label class="flex items-center gap-3 px-2 cursor-pointer">
-                    <input type="checkbox" id="checkRecordar" class="w-5 h-5 rounded border-white/10">
-                    <span class="text-[10px] text-slate-500 font-bold uppercase">Recordar sesión</span>
-                </label>
-                <button onclick="validarJefe()" class="w-full bg-blue-600 py-5 rounded-[2rem] font-black neo-button">ACCEDER</button>
-                <button onclick="document.getElementById('modal-login').classList.add('hidden')" class="w-full text-slate-600 font-bold text-xs pt-4 text-center">CERRAR</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="app-screen" class="hidden min-h-screen">
-        <nav class="p-6 glass sticky top-0 z-40 flex justify-between items-center rounded-b-[2.5rem]">
-            <div class="w-10"></div>
-            <span id="display-user" class="font-black text-blue-400 uppercase italic tracking-tighter text-lg"></span>
-            <button id="btn-vaciado-global" onclick="borrarTodoArchivados()" class="hidden w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500/10 text-orange-500">
-                <i class="fa-solid fa-trash-can"></i>
-            </button>
-        </nav>
-
-        <main class="max-w-md mx-auto p-6 pb-24">
-            <div id="jefe-controls" class="hidden text-center">
-                <button id="btn-ruta"></button>
-                <button onclick="borrarTodoTareas()" class="w-full mb-8 py-2 text-[10px] font-black text-red-500/50 uppercase tracking-[0.3em] hover:text-red-500 transition-colors">
-                    <i class="fa-solid fa-eraser mr-2"></i> Limpiar tareas activas
-                </button>
-                <div class="glass p-6 rounded-[2.5rem] mb-10">
-                    <input id="taskIn" type="text" placeholder="Nueva tarea..." class="w-full p-5 rounded-2xl mb-4 outline-none">
-                    <div class="flex gap-3">
-                        <select id="empSel" class="flex-1 p-5 rounded-2xl font-bold text-xs outline-none appearance-none text-center">
-                            <option value="Carlos">Carlos</option>
-                            <option value="Ammy">Ammy</option>
-                            <option value="Trabajos">TRABAJOS</option>
-                        </select>
-                        <button onclick="agregarTarea()" class="bg-white text-black px-8 rounded-2xl font-black neo-button">OK</button>
-                    </div>
-                </div>
-            </div>
-
-            <h3 class="text-[9px] font-black text-slate-600 uppercase tracking-[0.4em] mb-6 px-4 flex items-center gap-4 text-center">
-                <div class="h-px bg-slate-800 flex-1"></div> PANEL DE CONTROL <div class="h-px bg-slate-800 flex-1"></div>
-            </h3>
-            
-            <div id="lista-tareas"></div>
-            <div id="lista-archivos"></div>
-        </main>
-
-        <div class="fixed bottom-6 left-6 z-50">
-            <button onclick="localStorage.removeItem('rf_v13_sesion'); location.reload();" 
-                    class="bg-red-500/10 border border-red-500/20 text-red-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl backdrop-blur-md neo-button">
-                <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Salir
-            </button>
-        </div>
-    </div>
 </body>
 </html>
